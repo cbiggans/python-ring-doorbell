@@ -4,7 +4,7 @@
 import os
 from uuid import uuid4 as uuid
 HEADERS = {
-    'Content-Type': 'application/x-www-form-urlencoded; charset: UTF-8',
+    'Content-Type': 'application/x-www-form-urlencoded', # Removed the charset line because kept getting 403 errors from POST requests when getting the websocket server
     'User-Agent': 'Dalvik/1.6.0 (Linux; Android 4.4.4; Build/KTU84Q)',
     'Accept-Encoding': 'gzip, deflate'
 }
@@ -27,7 +27,7 @@ NOT_FOUND = -1
 
 # API endpoints
 OAUTH_ENDPOINT = 'https://oauth.ring.com/oauth/token'
-API_VERSION = '9'
+API_VERSION = '11'  # Upgraded to 11 to get `location_id`
 API_URI = 'https://api.ring.com'
 CHIMES_ENDPOINT = '/clients_api/chimes/{0}'
 DEVICES_ENDPOINT = '/clients_api/ring_devices'

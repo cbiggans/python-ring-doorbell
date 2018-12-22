@@ -20,6 +20,7 @@ from ring_doorbell.const import (
 from ring_doorbell.doorbot import RingDoorBell
 from ring_doorbell.chime import RingChime
 from ring_doorbell.stickup_cam import RingStickUpCam
+from ring_doorbell.security import RingSecuritySystem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,6 +96,7 @@ class Ring(object):
                                      data=oauth_data,
                                      headers=HEADERS)
         oauth_token = None
+        # import pdb;pdb.set_trace()
         if response.status_code == 200:
             oauth_token = response.json().get('access_token')
         return oauth_token
@@ -106,6 +108,7 @@ class Ring(object):
         while loop <= attempts:
             HEADERS['Authorization'] = \
                 'Bearer {}'.format(self._get_oauth_token())
+            # import pdb;pdb.set_trace()
             loop += 1
             try:
                 if session is None:
@@ -159,7 +162,8 @@ class Ring(object):
               attempts=RETRY_TOKEN,
               method='GET',
               raw=False,
-              extra_params=None):
+              extra_params=None,
+              data=None):
         """Query data from Ring API."""
         if self.debug:
             _LOGGER.debug("Querying %s", url)
@@ -189,7 +193,8 @@ class Ring(object):
                 elif method == 'PUT':
                     req = self.session.put((url), params=urlencode(params))
                 elif method == 'POST':
-                    req = self.session.post((url), params=urlencode(params))
+                    req = self.session.post((url), params=urlencode(params),
+                            data=data, headers=HEADERS)
 
                 if self.debug:
                     _LOGGER.debug("_query %s ret %s", loop, req.status_code)
@@ -209,8 +214,9 @@ class Ring(object):
                 if raw:
                     response = req
                 else:
-                    if method == 'GET':
-                        response = req.json()
+                    # Removed the if statement to get it working for
+                    #   POST for getting websocket
+                    response = req.json()
                 break
 
         if self.debug:
@@ -254,6 +260,12 @@ class Ring(object):
         except AttributeError:
             pass
         return lst
+
+    @property
+    def security_system(self):
+        security_system = RingSecuritySystem(self, 'security_system')
+        security_system.connect_and_send_msg('RoomGetList')
+        return security_system
 
     @property
     def chimes(self):

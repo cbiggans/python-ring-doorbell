@@ -74,7 +74,10 @@ class RingGeneric(object):
                 lst = self._ring.query(url).get('authorized_doorbots')
             else:
                 lst = self._ring.query(url).get(self.family)
-            index = _locator(lst, 'description', self.name)
+            try:
+                index = _locator(lst, 'description', self.name)
+            except TypeError:
+                index = NOT_FOUND
             if index == NOT_FOUND:
                 return None
         except AttributeError:
@@ -89,6 +92,8 @@ class RingGeneric(object):
             url = API_URI + HEALTH_DOORBELL_ENDPOINT.format(self.account_id)
         elif self.family == 'chimes':
             url = API_URI + HEALTH_CHIMES_ENDPOINT.format(self.account_id)
+        else:
+            return {}
         self._health_attrs = self._ring.query(url).get('device_health')
 
     @property
@@ -111,6 +116,11 @@ class RingGeneric(object):
     def id(self):
         """Return ID."""
         return self._attrs.get('device_id')
+
+    @property
+    def location_id(self):
+        """Return Location ID."""
+        return self._attrs.get('location_id')
 
     @property
     def latitude(self):
