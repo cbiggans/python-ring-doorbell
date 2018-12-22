@@ -163,7 +163,8 @@ class Ring(object):
               method='GET',
               raw=False,
               extra_params=None,
-              data=None):
+              data=None,
+              get_post_json=False):
         """Query data from Ring API."""
         if self.debug:
             _LOGGER.debug("Querying %s", url)
@@ -216,7 +217,10 @@ class Ring(object):
                 else:
                     # Removed the if statement to get it working for
                     #   POST for getting websocket
-                    response = req.json()
+                    if method == 'GET' or get_post_json:
+                        response = req.json()
+                    # except Exception as e:
+                    #     import pdb;pdb.set_trace()
                 break
 
         if self.debug:

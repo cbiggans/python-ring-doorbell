@@ -4,7 +4,6 @@
 import logging
 import asyncio
 import websockets
-import websocket
 import json
 from datetime import datetime
 
@@ -117,6 +116,7 @@ class Device(object):
 
         return result
 
+
 class RingSecuritySystem(RingGeneric):
     """Implementation for Ring Security System."""
 
@@ -137,7 +137,6 @@ class RingSecuritySystem(RingGeneric):
 
         return socket_url
 
-    # TODO XXX
     def connect_and_send_msg(self, msg):
         socket_url = self.get_socket_url()
         devices = None
@@ -149,30 +148,22 @@ class RingSecuritySystem(RingGeneric):
                     # print(f"< {msg}")
 
                     result1 = await websocket.recv()
-                    print(f"< {result1}")
                     result2 = await websocket.recv()
-                    print(f"< {result2}")
 
                     msg1 = '42["message",{"msg":"RoomGetList","dst":"2851944a-c2a7-44cf-94dd-ae994ea38d46","seq":1}]'
                     await websocket.send(msg1)
-                    print(f"> {msg1}")
 
                     msg2 = '42["message",{"msg":"DeviceInfoDocGetList","dst":"2851944a-c2a7-44cf-94dd-ae994ea38d46","seq":2}]'
                     await websocket.send(msg2)
-                    print(f"> {msg2}")
 
                     result3 = await websocket.recv()
-                    print(f"< {result3}")
                     result4 = await websocket.recv()
-                    print(f"< {result4}")
                     result5 = await websocket.recv()
-                    print(f"< {result5}")
 
                     devices = json.loads(result5[2:])[1]['body']
                     for device in devices:
                         self.load_device(device)
 
-                    import pdb;pdb.set_trace()
                     return result5
 
         asyncio.get_event_loop().run_until_complete(connect_to_websocket(socket_url))
@@ -229,13 +220,11 @@ class RingSecuritySystem(RingGeneric):
             async with websockets.connect(socket_url) as websocket:
                 while(True):
                     msg = await websocket.recv()
-                    print(f"< {msg}")
 
                     # This is Ring specific acknowledgement
                     #    After sending this, ring sends back '3'
                     if str(msg) == '2':
                         await websocket.send(msg)
-                        print(f"> {msg}")
 
         asyncio.get_event_loop().run_until_complete(connect_to_websocket(socket_url))
 
@@ -248,7 +237,8 @@ class RingSecuritySystem(RingGeneric):
 
         response = self._ring.query(
                 (url), method='POST',
-                data={'accountId': location_id})
+                data={'accountId': location_id},
+                get_post_json=True)
 
         _LOGGER.debug('get_websocket_server response: %s' % (response))
         return response
