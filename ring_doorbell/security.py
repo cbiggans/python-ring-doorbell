@@ -1,9 +1,14 @@
 # coding: utf-8
 # vim:sw=4:ts=4:et:
 """Python Ring RingGeneric wrapper."""
+"""MUST USE PYTHON3 TO USE THIS"""
 import logging
-import asyncio
-import websockets
+try:
+    import asyncio
+    import websockets
+except ImportError:
+    pass
+
 import json
 from datetime import datetime
 
@@ -18,24 +23,24 @@ except ImportError:
     import _thread as thread
 import time
 
-def on_message(ws, message):
-    print(message)
-
-def on_error(ws, error):
-    print(error)
-
-def on_close(ws):
-    print("### closed ###")
-
-def on_open(ws):
-    def run(*args):
-        for i in range(3):
-            time.sleep(1)
-            ws.send("Hello %d" % i)
-        time.sleep(1)
-        ws.close()
-        print("thread terminating...")
-    thread.start_new_thread(run, ())
+# def on_message(ws, message):
+#     print(message)
+# 
+# def on_error(ws, error):
+#     print(error)
+# 
+# def on_close(ws):
+#     print("### closed ###")
+# 
+# def on_open(ws):
+#     def run(*args):
+#         for i in range(3):
+#             time.sleep(1)
+#             ws.send("Hello %d" % i)
+#         time.sleep(1)
+#         ws.close()
+#         print("thread terminating...")
+#     thread.start_new_thread(run, ())
 
 class Devices(object):
     # Collection of Devices
@@ -124,6 +129,11 @@ class RingSecuritySystem(RingGeneric):
         super(RingSecuritySystem, self).__init__(ring, name, shared=False)
 
         self.devices = Devices()
+
+    def get_devices(self):
+        security_system.connect_and_send_msg('RoomGetList')
+
+        return self.devices
 
     def get_socket_url(self):
         websocket_server = self.get_websocket_server()

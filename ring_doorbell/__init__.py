@@ -20,7 +20,6 @@ from ring_doorbell.const import (
 from ring_doorbell.doorbot import RingDoorBell
 from ring_doorbell.chime import RingChime
 from ring_doorbell.stickup_cam import RingStickUpCam
-from ring_doorbell.security import RingSecuritySystem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -267,8 +266,14 @@ class Ring(object):
 
     @property
     def security_system(self):
+        try:
+            from ring_doorbell.security import RingSecuritySystem
+        except SyntaxError:
+            print("Must use python version >=3.4")
+            return None
+
         security_system = RingSecuritySystem(self, 'security_system')
-        security_system.connect_and_send_msg('RoomGetList')
+
         return security_system
 
     @property

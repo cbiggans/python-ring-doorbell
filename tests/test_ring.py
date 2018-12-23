@@ -180,3 +180,17 @@ class TestRing(RingUnitTestBase):
                 '/clients_api/doorbots/987652/siren_on',
                 history[3].path)
             self.assertEqual('30', history[3].qs['duration'][0])
+
+    @requests_mock.Mocker()
+    def test_security_system(self, mock):
+        mock.get('https://api.ring.com/clients_api/ring_devices',
+                 text=load_fixture('ring_devices.json'))
+        mock.get('https://api.ring.com/clients_api/chimes/999999/health',
+                 text=load_fixture('ring_chime_health_attrs.json'))
+        mock.get('https://api.ring.com/clients_api/doorbots/987653/health',
+                 text=load_fixture('ring_doorboot_health_attrs_id987653.json'))
+        mock.get('https://api.ring.com/clients_api/doorbots/987652/health',
+                 text=load_fixture('ring_doorboot_health_attrs.json'))
+        mock.post('https://app.ring.com/api/v1/rs/connections', text='{"server": "tmp.prd.rings.solutions", "authCode": "tmp", "onBattery": false}')
+
+        security_system = self.ring.security_system
