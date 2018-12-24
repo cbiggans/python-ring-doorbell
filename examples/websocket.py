@@ -1,6 +1,11 @@
 import os
+import sys
 import logging
 from datetime import datetime
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, '%s/../' % (current_dir))
+
 from ring_doorbell.security import RingSecuritySystem
 from ring_doorbell import Ring
 
@@ -13,6 +18,6 @@ password = os.environ.get('RING_PASSWORD', 'password')
 
 ring = Ring(username, password)
 security_system = ring.security_system
-
+devices = security_system.get_devices()
 
 _LOGGER.debug('ID: %s' % (security_system.id))
