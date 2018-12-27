@@ -33,6 +33,7 @@ class Ring(object):
         """Initialize the Ring object."""
         self.is_connected = None
         self.token = None
+        self._oauth_token = None
         self.params = None
         self._persist_token = persist_token
         self._push_token_notify_url = push_token_notify_url
@@ -46,6 +47,7 @@ class Ring(object):
         self.cache['account'] = self.username
         self.cache_file = cache_file
         self._reuse_session = reuse_session
+        self._security_system = None
 
         # tries to re-use old session
         if self._reuse_session:
@@ -95,19 +97,20 @@ class Ring(object):
                                      data=oauth_data,
                                      headers=HEADERS)
         oauth_token = None
-        # import pdb;pdb.set_trace()
         if response.status_code == 200:
             oauth_token = response.json().get('access_token')
         return oauth_token
 
-    def _authenticate(self, attempts=RETRY_TOKEN, session=None):
+    def _authenticate(self, attempts=RETRY_TOKEN, session=None, reset_token=False):
         """Authenticate user against Ring API."""
         url = API_URI + NEW_SESSION_ENDPOINT
         loop = 0
         while loop <= attempts:
+            if not self._oauth_token or not reset_token:
+                self._oauth_token = self._get_oauth_token()
             HEADERS['Authorization'] = \
-                'Bearer {}'.format(self._get_oauth_token())
-            # import pdb;pdb.set_trace()
+                'Bearer {}'.format(self._oauth_token)
+
             loop += 1
             try:
                 if session is None:
@@ -189,7 +192,7 @@ class Ring(object):
             loop += 1
             try:
                 if method == 'GET':
-                    req = self.session.get((url), params=urlencode(params))
+                    req = self.session.get((url), params=urlencode(params), headers=HEADERS)
                 elif method == 'PUT':
                     req = self.session.put((url), params=urlencode(params))
                 elif method == 'POST':
@@ -269,12 +272,14 @@ class Ring(object):
         try:
             from ring_doorbell.security import RingSecuritySystem
         except SyntaxError:
-            print("Must use python version >=3.4")
-            return None
+            raise(ImportError("Must use python version >=3.4"))
 
-        security_system = RingSecuritySystem(self, 'security_system')
+        if self._security_system:
+            return self._security_system
 
-        return security_system
+        self._security_system = RingSecuritySystem(self, 'security_system')
+
+        return self._security_system
 
     @property
     def chimes(self):

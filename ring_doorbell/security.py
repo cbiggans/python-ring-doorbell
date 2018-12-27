@@ -13,6 +13,7 @@ import json
 from datetime import datetime
 
 from ring_doorbell.generic import RingGeneric
+from ring_doorbell.props.devices import Devices
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,27 +48,23 @@ class RingSecuritySystem(RingGeneric):
     """Implementation for Ring Security System."""
 
     def __init__(self, ring, name, shared=False):
-        try:
-            from ring_doorbell.security_repo import RingSecuritySystemRepo
-        except SyntaxError:
-            raise(BaseException("Must use python version >=3.4"))
-
         super(RingSecuritySystem, self).__init__(ring, name, shared=False)
-        from ring_doorbell.props.devices import Devices
+
+        try:
+            from ring_doorbell.security_proxy import RingSecuritySystemProxy
+            self.proxy = RingSecuritySystemProxy(self._ring)
+        except SyntaxError:
+            raise(ImportError("Must use python version >=3.4"))
 
         self.devices = Devices()
 
     def get_devices(self):
-        devices = self.connect_and_send_msg('RoomGetList')
+        self.devices = self.proxy.get_devices()
 
-        return devices
+        return self.devices
 
-    def connect_and_send_msg(self, msg):
-        from ring_doorbell.security_repo import RingSecuritySystemRepo
-
-        repo = RingSecuritySystemRepo(self._ring)
-
-        return repo.connect_and_send_msg(msg)
+    def connect_and_send_messages(self, messages):
+        return self.proxy.connect_and_send_messages(messages)
 
     @property
     def id(self):

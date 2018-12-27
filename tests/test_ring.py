@@ -4,6 +4,9 @@ from datetime import datetime
 from tests.test_base import RingUnitTestBase
 from tests.helpers import load_fixture
 import requests_mock
+import sys
+import pytest
+from distutils.version import LooseVersion
 
 
 class TestRing(RingUnitTestBase):
@@ -193,4 +196,15 @@ class TestRing(RingUnitTestBase):
                  text=load_fixture('ring_doorboot_health_attrs.json'))
         mock.post('https://app.ring.com/api/v1/rs/connections', text='{"server": "tmp.prd.rings.solutions", "authCode": "tmp", "onBattery": false}')
 
-        security_system = self.ring.security_system
+        # Run this for python versions under 3.4
+        current_version = LooseVersion('%s.%s.%s' % (
+            sys.version_info.major,
+            sys.version_info.minor,
+            sys.version_info.micro))
+        compared_version = LooseVersion('3.4.0')
+        if current_version < compared_version:
+            with pytest.raises(ImportError) as excinfo:
+                security_system = self.ring.security_system
+            assert 'Must use python version' in str(excinfo.value)
+        else:
+            security_system = self.ring.security_system

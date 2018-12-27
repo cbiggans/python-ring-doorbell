@@ -20,4 +20,10 @@ ring = Ring(username, password)
 security_system = ring.security_system
 devices = security_system.get_devices()
 
-_LOGGER.debug('ID: %s' % (security_system.id))
+security_system.proxy.set_lock(devices.get_locks()[0], setting='unlock')
+
+_LOGGER.debug('ID: %s' % (ring.uuid))
+
+
+# "context":{"affectedEntityType":"asset","
+# affectedEntityId":"2851944a-c2a7-44cf-94dd-ae994ea38d46","accountId":"c23jb7-39ura-0","programId":"a551631c-0e88-4097-8e1a-9595202c2ba9","assetId":"2851944a-c2a7-44cf-94dd-ae994ea38d46","assetKind":"base_station_v1"}
