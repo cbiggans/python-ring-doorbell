@@ -52,7 +52,13 @@ class RingSecuritySystem(RingGeneric):
 
         try:
             from ring_doorbell.security_proxy import RingSecuritySystemProxy
-            self.proxy = RingSecuritySystemProxy(self._ring)
+            self._attrs = {
+                'location_id': self._ring.devices['doorbells'][0].location_id,
+                'uuid': None,
+                'auth_code': None,
+                'assets': None,
+            }
+            self.proxy = RingSecuritySystemProxy(self)
         except SyntaxError:
             raise(ImportError("Must use python version >=3.4"))
 
@@ -63,9 +69,19 @@ class RingSecuritySystem(RingGeneric):
 
         return self.devices
 
+    def set_alarm(self, setting='disarmed'):
+        """
+        setting=['disarmed', 'home', 'away']
+        """
+        return self.proxy.set_alarm(self.zid, self.uuid, setting)
+
     def connect_and_send_messages(self, messages):
         return self.proxy.connect_and_send_messages(messages)
 
     @property
     def id(self):
         pass
+
+    @property
+    def zid(self):
+        return self.devices.get_security_panel()[0].zid

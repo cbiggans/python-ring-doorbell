@@ -13,56 +13,56 @@ class Devices(object):
     def get_contact_sensors(self):
         result = []
         for device in self.devices:
-            if device.deviceType == 'sensor.contact':
+            if device.device_type == 'sensor.contact':
                 result.append(device)
         return result
 
     def get_motion_sensors(self):
         result = []
         for device in self.devices:
-            if device.deviceType == 'sensor.motion':
+            if device.device_type == 'sensor.motion':
                 result.append(device)
         return result
 
     def get_alarms(self):
         result = []
         for device in self.devices:
-            if 'alarm' in device.deviceType:
+            if 'alarm' in device.device_type:
                 result.append(device)
         return result
 
     def get_access_codes(self):
         result = []
         for device in self.devices:
-            if 'access-code' in device.deviceType:
+            if 'access-code' in device.device_type:
                 result.append(device)
         return result
 
     def get_security_panel(self):
         result = []
         for device in self.devices:
-            if 'security-panel' in device.deviceType:
+            if 'security-panel' in device.device_type:
                 result.append(device)
         return result
 
     def get_hubs(self):
         result = []
         for device in self.devices:
-            if 'hub' in device.deviceType:
+            if 'hub' in device.device_type:
                 result.append(device)
         return result
 
     def get_locks(self):
         result = []
         for device in self.devices:
-            if 'lock' in device.deviceType:
+            if 'lock' in device.device_type:
                 result.append(device)
         return result
 
     def get_range_extenders(self):
         result = []
         for device in self.devices:
-            if 'range-extender' in device.deviceType:
+            if 'range-extender' in device.device_type:
                 result.append(device)
         return result
 
@@ -87,3 +87,19 @@ class Device(object):
                 return device
 
         return None
+
+    @property
+    def status(self):
+        status = {
+            'battery_status': self.battery_status,
+            'comm_status': self.comm_status,
+            'tamper_status': self.tamper_status,
+        }
+
+        if self.lock_setting:
+            status['lock_setting'] = self.lock_setting
+
+        if self.faulted is not None:
+            status['faulted'] = self.faulted
+
+        return status

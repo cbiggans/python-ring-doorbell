@@ -38,35 +38,43 @@ def parse_device(device_json):
         device._source_json = device_json
         device.name = v2_data['name']
         device.zid = v2_data['zid']
-        device.batteryStatus = v2_data['batteryStatus']
-        device.batteryLevel = v2_data.get('batteryLevel')
-        device.categoryId = v2_data['categoryId']
-        device.tamperStatus = v2_data['tamperStatus']
+        device.battery_status = v2_data['batteryStatus']
+        device.battery_level = v2_data.get('batteryLevel')
+        device.category_id = v2_data['categoryId']
+        device.tamper_status = v2_data['tamperStatus']
         device.tags = v2_data['tags']
-        device.subCategoryId = v2_data['subCategoryId']
-        device.roomId = v2_data['roomId']
-        device.managerId = v2_data['managerId']
-        device.lastUpdate = v2_data['lastUpdate']
-        device.adapterType = v2_data['adapterType']
-        device.adapterZid = v2_data.get('adapterZid')
-        device.deviceType = v2_data['deviceType']
-        device.deviceFoundTime = v2_data['deviceFoundTime']
-        device.commandTypes = v2_data['commandTypes']
-        device.commStatus = v2_data['commStatus']
+        device.sub_category_id = v2_data['subCategoryId']
+        device.room_id = v2_data['roomId']
+        device.manager_id = v2_data['managerId']
+        device.last_update = v2_data['lastUpdate']
+        device.adapter_type = v2_data['adapterType']
+        device.adapter_zid = v2_data.get('adapterZid')
+        device.device_type = v2_data['deviceType']
+        device.device_found_time = v2_data['deviceFoundTime']
+        device.comm_status = v2_data['commStatus']
+
+        # If the status is broken, then does not have this setting
+        device.command_types = v2_data.get('commandTypes')
 
         device.impulse_type = v2_data.get('impulseTypes')
         device.fingerprint = v2_data.get('fingerprint')
-        device.faulted = v2_data.get('faulted')
         device.parent_zid = v2_data.get('parentZid')
 
         device.address = v1_adapter_data.get('address')
         device.fingerprint = v1_adapter_data.get('fingerprint')
-        device.homeId = v1_adapter_data.get('homeId')
-        device.nodeId = v1_adapter_data.get('nodeId')
-        device.reconfigureState = v1_adapter_data.get('reconfigureState')
-        device.routeSpeed = v1_adapter_data.get('routeSpeed')
-        device.rssiTimestamp = v1_adapter_data.get('rssiTimestamp')
-        device.signalStrength = v1_adapter_data.get('signalStrength')
+        device.home_id = v1_adapter_data.get('homeId')
+        device.node_id = v1_adapter_data.get('nodeId')
+        device.reconfigure_state = v1_adapter_data.get('reconfigureState')
+        device.route_speed = v1_adapter_data.get('routeSpeed')
+        device.rssi_timestamp = v1_adapter_data.get('rssiTimestamp')
+        device.signal_strength = v1_adapter_data.get('signalStrength')
+
+        # Lock Specific
+        device.lock_setting = v1_data.get('locked')
+
+        # Contact Sensor Specific
+        device.faulted = v1_data.get('faulted')
+
     except KeyError as e:
         _LOGGER.debug('device_json: %s' % (device_json))
         raise e
@@ -88,23 +96,24 @@ def get_websocket_server(ring, location_id):
 
 
 class RingSecuritySystemProxy(object):
-    def __init__(self, ring):
-        self._ring = ring
+    def __init__(self, security_system):
+        self._security_system = security_system
 
     def get_websocket_server(self):
-        location_id = self._ring.devices['doorbells'][0].location_id
+        location_id = self._security_system.location_id
 
-        return get_websocket_server(self._ring, location_id)
+        return get_websocket_server(self._security_system._ring, location_id)
 
     def get_socket_url(self):
         websocket_server = self.get_websocket_server()
 
         url = websocket_server['host']
-        auth_code = websocket_server['ticket']
-        self._ring.uuid = websocket_server['assets'][0]['uuid']
-        self._ring.assets = websocket_server['assets']
+        self._security_system._attrs['auth_code'] = websocket_server['ticket']
+        self._security_system._attrs['uuid'] = websocket_server['assets'][0]['uuid']
+        self._security_system._attrs['assets'] = websocket_server['assets']
 
-        socket_url = 'wss://%s/socket.io/?authcode=%s&transport=websocket' % (url, auth_code)
+        socket_url = 'wss://%s/socket.io/?authcode=%s&transport=websocket' % (
+            url, self._security_system.auth_code)
 
         _LOGGER.debug('Socket URL: %s' % socket_url)
 
@@ -127,7 +136,26 @@ class RingSecuritySystemProxy(object):
         return devices
 
     def set_lock(self, device, setting='lock'):
-        msg = '42["message", {"msg": "DeviceInfoSet", "datatype": "DeviceInfoSetType", "body": [{"zid": "%s", "command": {"v1": [{"commandType": "lock.%s", "data": {}}]}}], "dst": "%s", "seq": 4}]' % (device.zid, setting, self._ring.uuid)
+        msg = '42["message", {"msg": "DeviceInfoSet", "datatype": "DeviceInfoSetType", "body": [{"zid": "%s", "command": {"v1": [{"commandType": "lock.%s", "data": {}}]}}], "dst": "%s", "seq": 4}]' % (device.zid, setting, self._security_system.uuid)
+
+        messages = [msg]
+
+        responses = self.connect_and_send_messages(messages)
+
+        return True
+
+    def set_alarm(self, zid, uuid, setting):
+        """
+        setting=['disarmed', 'home', 'away']
+        """
+        modes = {
+            'disarmed': 'none',
+            'home':     'some',
+            'away':     'all',
+        }
+
+        msg = '42["message",{"msg":"DeviceInfoSet","datatype":"DeviceInfoSetType","body":[{"zid":"%s","command":{"v1":[{"commandType":"security-panel.switch-mode","data":{"mode":"%s"}}]}}],"dst":"%s","seq":3}]' % (
+            zid, modes[setting], uuid)
 
         messages = [msg]
 
@@ -156,25 +184,6 @@ class RingSecuritySystemProxy(object):
 
 
         return asyncio.get_event_loop().run_until_complete(connect_to_websocket(socket_url, messages))
-
-    # def set_lock(self, device, lock_setting='lock'):
-    #     socket_url = self.get_socket_url()
-
-    #     async def connect_to_websocket(self, device, socket_url):
-    #         async with websockets.connect(socket_url) as websocket:
-    #             rec1 = await websocket.recv()
-    #             rec2 = await websocket.recv()
-
-    #             msg1 = '42["message", {"msg": "DeviceInfoSet", "datatype": "DeviceInfoSetType", "body": [{"zid": "%s", "command": {"v1": [{"commandType": "lock.%s", "data": {}}]}}], "dst": "%s", "seq": 4}]' % (device.zid, lock_setting, self._ring.uuid)
-    #             await websocket.send(msg1)
-
-    #             result3 = await websocket.recv()
-    #             result4 = await websocket.recv()
-    #             result5 = await websocket.recv()
-
-    #             return
-
-    #     asyncio.get_event_loop().run_until_complete(connect_to_websocket(self, device, socket_url))
 
     def maintain_connection(self):
         socket_url = self.get_socket_url()

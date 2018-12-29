@@ -102,6 +102,16 @@ class RingGeneric(object):
         return self._attrs.get('id')
 
     @property
+    def uuid(self):
+        """Return account ID."""
+        return self._attrs.get('uuid')
+
+    @property
+    def auth_code(self):
+        """Return account ID."""
+        return self._attrs.get('auth_code')
+
+    @property
     def address(self):
         """Return address."""
         return self._attrs.get('address')
