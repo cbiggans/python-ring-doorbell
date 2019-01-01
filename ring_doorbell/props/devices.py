@@ -102,4 +102,7 @@ class Device(object):
         if self.faulted is not None:
             status['faulted'] = self.faulted
 
+        if self.mode is not None:
+            status['mode'] = self.mode
+
         return status

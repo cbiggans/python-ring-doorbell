@@ -19,8 +19,7 @@ password = os.environ.get('RING_PASSWORD', 'password')
 ring = Ring(username, password)
 security_system = ring.security_system
 devices = security_system.get_devices()
-import pdb;pdb.set_trace()
 
 security_system.proxy.set_lock(devices.get_locks()[0], setting='unlock')
 
-_LOGGER.debug('ID: %s' % (ring.uuid))
+# _LOGGER.debug('ID: %s' % (security_system.uuid))

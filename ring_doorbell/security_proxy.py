@@ -75,6 +75,9 @@ def parse_device(device_json):
         # Contact Sensor Specific
         device.faulted = v1_data.get('faulted')
 
+        # Security Panel Specific
+        device.mode = v1_data.get('mode')
+
     except KeyError as e:
         _LOGGER.debug('device_json: %s' % (device_json))
         raise e
