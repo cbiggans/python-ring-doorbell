@@ -147,24 +147,74 @@ class RingSecuritySystemProxy(object):
 
         return True
 
-    def set_alarm(self, zid, uuid, setting):
+    def set_alarm(self, zid, uuid, mode):
         """
-        setting=['disarmed', 'home', 'away']
+        setting=['none', 'some', 'all']
         """
-        modes = {
-            'disarmed': 'none',
-            'home':     'some',
-            'away':     'all',
-        }
+        # modes = {
+        #     'disarmed': 'none',
+        #     'home':     'some',
+        #     'away':     'all',
+        # }
 
         msg = '42["message",{"msg":"DeviceInfoSet","datatype":"DeviceInfoSetType","body":[{"zid":"%s","command":{"v1":[{"commandType":"security-panel.switch-mode","data":{"mode":"%s"}}]}}],"dst":"%s","seq":3}]' % (
-            zid, modes[setting], uuid)
+            zid, mode, uuid)
 
         messages = [msg]
 
         responses = self.connect_and_send_messages(messages)
 
-        return True
+        # TODO XXX: Refactor this out, shouldn't have this logic in here for testing
+        #   purposes
+        loaded_data = None
+        for response in responses:
+            tmp_loaded_data = json.loads(response[2::])
+            if tmp_loaded_data[0] == 'DataUpdate':
+                if tmp_loaded_data[1].get('datatype') == 'DeviceInfoDocType':
+                    loaded_data = tmp_loaded_data
+                    break
+                elif tmp_loaded_data[1].get('datatype') == 'PassthruType':
+                    loaded_data = tmp_loaded_data
+                    break
+
+        try:
+            message_data = loaded_data[1]['body'][0]
+        except Exception as e:
+            _LOGGER.debug('responses: %s' % (responses))
+            _LOGGER.debug('loaded_data: %s' % (loaded_data))
+            raise e
+
+        # Countdown normally happens in 'AWAY' mode
+        if message_data.get('type') and 'countdown' in message_data['type']:
+            status = {
+                'mode': mode,
+                'error': False,
+                'mode_changed': True,
+            }
+            responses.append(json.dumps(status))
+            return responses
+
+        try:
+            impulse_data = message_data['impulse']['v1'][0]
+            impulse_type = impulse_data['impulseType']
+            status = {"mode_changed": None, "error": None}
+            status['mode'] = impulse_type.split('.')[-1]
+        except Exception as e:
+            _LOGGER.debug('message_datta: %s' % (message_data))
+            raise e
+
+        if status['mode'] == mode:
+            status["mode_changed"] = True
+            status["error"] = False
+        else:
+            status["mode_changed"] = False
+            # An error didn't occur if the mode didn't change
+            status["error"] = False if impulse_type == 'command.complete' else True
+            status["mode"] = mode
+
+        responses.append(json.dumps(status))
+
+        return responses
 
     def connect_and_send_messages(self, messages):
         socket_url = self.get_socket_url()

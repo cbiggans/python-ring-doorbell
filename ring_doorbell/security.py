@@ -69,11 +69,15 @@ class RingSecuritySystem(RingGeneric):
 
         return self.devices
 
-    def set_alarm(self, setting='disarmed'):
+    def set_alarm(self, mode='none'):
         """
-        setting=['disarmed', 'home', 'away']
+        mode=['none', 'some', 'all']
+
+        'none' refers to 'Disarmed'
+        'some' refers to 'Home & Armed'
+        'all' refers to 'Away & Armed'
         """
-        return self.proxy.set_alarm(self.zid, self.uuid, setting)
+        return self.proxy.set_alarm(self.zid, self.uuid, mode)
 
     def connect_and_send_messages(self, messages):
         return self.proxy.connect_and_send_messages(messages)
