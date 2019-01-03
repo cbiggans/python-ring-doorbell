@@ -21,7 +21,7 @@ security_system = ring.security_system
 devices = security_system.get_devices()
 
 # security_system.proxy.set_lock(devices.get_locks()[0], setting='unlock')
-responses = security_system.set_alarm('all')
+responses = security_system.set_alarm('none')
 _LOGGER.debug('%s' % (responses[-1]))
 
 # _LOGGER.debug('ID: %s' % (security_system.uuid))

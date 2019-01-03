@@ -131,10 +131,30 @@ class RingSecuritySystemProxy(object):
         responses = self.connect_and_send_messages(messages)
         devices = Devices()
 
-        device_jsons = json.loads(responses[2][2:])[1]['body']
-        for device_json in device_jsons:
-            device = parse_device(device_json)
-            devices.add(device)
+        try:
+            # TODO XXX: Refactor this out, shouldn't have this logic in here for testing
+            #   purposes
+            loaded_data = None
+            for response in responses:
+                tmp_loaded_data = json.loads(response[2::])
+                if (tmp_loaded_data[1].get('datatype') == 'DeviceInfoDocType' and
+                    tmp_loaded_data[1].get('msg') == 'DeviceInfoDocGetList'):
+                    loaded_data = tmp_loaded_data
+                    break
+
+            # TODO XXX: See if can just wait for msg type needed when calling
+            #   get_messages
+
+            device_jsons = loaded_data[1]['body']
+            for device_json in device_jsons:
+                device = parse_device(device_json)
+                devices.add(device)
+        except KeyError as e:
+            import pdb;pdb.set_trace()
+            raise e
+        except TypeError as e:
+            import pdb;pdb.set_trace()
+            raise e
 
         return devices
 
@@ -182,6 +202,7 @@ class RingSecuritySystemProxy(object):
         except Exception as e:
             _LOGGER.debug('responses: %s' % (responses))
             _LOGGER.debug('loaded_data: %s' % (loaded_data))
+            import pdb;pdb.set_trace()
             raise e
 
         # Countdown normally happens in 'AWAY' mode
@@ -221,7 +242,7 @@ class RingSecuritySystemProxy(object):
 
         return responses
 
-    def connect_and_send_messages(self, messages):
+    def connect_and_send_messages(self, messages, min_num_messages=3):
         socket_url = self.get_socket_url()
 
         async def connect_to_websocket(socket_url, messages):
@@ -234,9 +255,18 @@ class RingSecuritySystemProxy(object):
                     for msg in messages:
                         await websocket.send(msg)
 
-                    responses.append(await websocket.recv())
-                    responses.append(await websocket.recv())
-                    responses.append(await websocket.recv())
+                    async def tmp(responses):
+                        while(True):
+                            responses.append(await websocket.recv())
+
+                    responses = []
+                    try:
+                        # Wait 3 seconds so that can be sure to get all of the messages
+                        await asyncio.wait_for(tmp(responses), timeout=3)
+                        # Better way might be to check if got the correct
+                        # message was looking for?
+                    except asyncio.TimeoutError:
+                        pass
 
                     return responses
 
