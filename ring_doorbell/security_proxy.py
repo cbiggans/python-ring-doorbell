@@ -190,6 +190,7 @@ class RingSecuritySystemProxy(object):
                 'mode': mode,
                 'error': False,
                 'mode_changed': True,
+                'in_countdown': True,
             }
             responses.append(json.dumps(status))
             return responses
@@ -197,10 +198,14 @@ class RingSecuritySystemProxy(object):
         try:
             impulse_data = message_data['impulse']['v1'][0]
             impulse_type = impulse_data['impulseType']
-            status = {"mode_changed": None, "error": None}
-            status['mode'] = impulse_type.split('.')[-1]
+            status = {
+                "mode_changed": None,
+                "error": None,
+                "mode": impulse_type.split('.')[-1],
+                "in_countdown": False,
+            }
         except Exception as e:
-            _LOGGER.debug('message_datta: %s' % (message_data))
+            _LOGGER.debug('message_data: %s' % (message_data))
             raise e
 
         if status['mode'] == mode:
