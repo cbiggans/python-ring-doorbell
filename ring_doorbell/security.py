@@ -79,6 +79,12 @@ class RingSecuritySystem(RingGeneric):
         """
         return self.proxy.set_alarm(self.zid, self.uuid, mode)
 
+    def set_lock(self, device, setting='lock'):
+        """
+        setting=['lock', 'unlock']
+        """
+        return self.proxy.set_lock(device, setting=setting)
+
     def connect_and_send_messages(self, messages):
         return self.proxy.connect_and_send_messages(messages)
 
